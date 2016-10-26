@@ -23,7 +23,7 @@ myKeys.keydown = [];
 
 // event listeners
 window.addEventListener("keydown",function(e){
-	console.log("keydown=" + e.keyCode);
+	//console.log("keydown=" + e.keyCode);
 	myKeys.keydown[e.keyCode] = true;
     
     // character movement    
@@ -32,13 +32,14 @@ window.addEventListener("keydown",function(e){
         case 65: app.main.player.position.x-=30; break; // A
         case 83: app.main.player.position.y+=30; break; // S
         case 68: app.main.player.position.x+=30; break; // D
-    }
+    } console.log("Position:" + app.main.player.position.x + "," + app.main.player.position.y);
 });
 	
 window.addEventListener("keyup",function(e){
-	console.log("keyup=" + e.keyCode);
+	//console.log("keyup=" + e.keyCode);
 	myKeys.keydown[e.keyCode] = false;
 	
+    /*
 	// pausing and resuming
 	var char = String.fromCharCode(e.keyCode);
 	if (char == "p" || char == "P"){
@@ -48,8 +49,8 @@ window.addEventListener("keyup",function(e){
 			app.main.pauseGame();
 		}
 	}
-	//if (char == "d" || char == "D"){
-	//	app.main.toggleDebug();
-	//}
+	if (char == "d" || char == "D"){
+		app.main.toggleDebug();
+	}*/
 	
 });

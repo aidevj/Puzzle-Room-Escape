@@ -56,7 +56,7 @@ app.main = {
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,1,
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
@@ -67,11 +67,11 @@ app.main = {
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
     ],
     CELL_WIDTH: 30, // grid cell size in px
-    MAP_COLORS: [
+    MAP_COLORS: [ // maybe not use this? not needed right now since colors are hardcoded: see drawWalls
         'rgba(0,0,0,0)',    // (0) empty space
         '#000',             // (1) wall (black)
-        '#fff',             // (2) panel (unpressed)
-        '#333'              // (3) panel (pressed - once pressed, can only be let up by reaching a door or pressing another panel)
+        '#fff',             // (2) panel (unpressed- once pressed, can only be let up by reaching a door or pressing another panel)
+        '#0041aa'           // (3) Door/exit
     ],
     
     
@@ -119,7 +119,7 @@ app.main = {
         
         
         // CHECK FOR COLLISIONS
-        //this.checkForCollisions();
+        this.checkCollisions();
         // TO DO CHECK IF WALLS OR DOORS NEXT TO PLAYER
 
 		// DRAWING GOES UNDER HERE
@@ -131,6 +131,9 @@ app.main = {
         //this.drawMap(this.walls); // ERROR:? executing before loadMap is done?
         // for now hardcode all the walls
         this.drawWalls();
+        
+        // Draw Grid lines
+        this.drawGrid(); // Grid would not draw unless it was after walls??
 	   
         // Draw sprites
         this.drawSprites();
@@ -147,12 +150,13 @@ app.main = {
         
     },
     
-    drawSprites: function(){
-        // call draw functions here
-        
-        // drawing square for now
+    drawSprites: function(){        
+        // drawing square as player for now
         this.ctx.fillStyle = this.player.color;
         this.ctx.fillRect(this.player.position.x,this.player.position.y,30,30);
+        
+        
+        
         
     },
     
@@ -194,21 +198,83 @@ app.main = {
         } // end i for
     },
     
-    drawWalls: function(){
+    drawWalls: function(){ // misnomer: this also draws panels and doors for now
         for (var i=0; i<this.walls.length; i++){
+            this.ctx.save();
             switch(this.walls[i]){ // block type
-                case 0:
+                case 0: // nothing
                     break;
-                case 1:
-                    this.ctx.fillStyle =  '#000'; // Black Walls
-                    this.ctx.fillRect((i%22)*this.CELL_WIDTH, (Math.floor(i/22)) * this.CELL_WIDTH, this.CELL_WIDTH, this.CELL_WIDTH);
+                case 1: // Black Walls
+                    this.ctx.fillStyle =  '#000'; 
                     break;
-                case 2:
-                    this.ctx.fillStyle =  '#000'; // Black Walls
-                    this.ctx.fillRect((i%22)*this.CELL_WIDTH, (Math.floor(i/22)) * this.CELL_WIDTH, this.CELL_WIDTH, this.CELL_WIDTH);
+                case 2: // white panels
+                    this.ctx.fillStyle =  '#fff'; 
                     break;
-            }
+                case 3: // white unpressed panels
+                    this.ctx.fillStyle =  '#0041aa'; 
+                    break;
+            } // end switch
+            // draw
+            // x Pos = (i%22)*this.CELL_WIDTH
+            // y Pos = (Math.floor(i/22)) * this.CELL_WIDTH
+            this.ctx.fillRect((i%22)*this.CELL_WIDTH, (Math.floor(i/22)) * this.CELL_WIDTH, this.CELL_WIDTH, this.CELL_WIDTH);
+            this.ctx.restore();
         }
+    },
+    
+    drawGrid: function() {
+      this.ctx.strokeStyle = "#888";
+        this.ctx.lineWidth="1";
+        for (var i=0;i<this.HEIGHT;i++) { // horizantal
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, i * (this.CELL_WIDTH));
+            this.ctx.lineTo(this.WIDTH, i * (this.CELL_WIDTH));
+            this.ctx.closePath();
+            this.ctx.stroke();
+        }
+        for (var i=0;i<this.WIDTH;i++) { // vertical
+            this.ctx.beginPath();
+            this.ctx.moveTo(i * this.CELL_WIDTH, 0);
+            this.ctx.lineTo(i * this.CELL_WIDTH, this.HEIGHT);
+            this.ctx.closePath();
+            this.ctx.stroke();
+        }  
+    },
+    
+    checkCollisions: function() {
+        for (var i=0; i<this.walls.length;i++){
+            // only check for walls (indecies of value 1)
+            if (this.walls[i] != 1) { continue; }
+            
+            // otherwise go on to check
+            var wallXPos = (i%22)*this.CELL_WIDTH;
+            var wallYPos = (Math.floor(i/22)) * this.CELL_WIDTH;
+            
+            // if x or y  is within CELL_WIDTH (30px) of the wall at i, disable that direction in keys.js
+            // also check:
+            //      LEFT-RIGHT: Y's must be the same
+            //      UP-DOWN: X's must be the same
+            if (this.player.position.x + this.CELL_WIDTH == wallXPos && this.player.position.y == wallYPos) { // checks RIGHT
+                // disable right 'D'   
+                console.log("Cannot go RIGHT!");
+            }
+            if (this.player.position.x - this.CELL_WIDTH == wallXPos && this.player.position.y == wallYPos) { // checks LEFT
+                // disable right 'A'   
+                console.log("Cannot go LEFT!");
+            }
+            if (this.player.position.y + this.CELL_WIDTH == wallYPos && this.player.position.x == wallXPos) { // checks DOWN
+                // disable down 'S'   
+                console.log("Cannot go DOWN!");
+            }
+            if (this.player.position.y - this.CELL_WIDTH == wallYPos && this.player.position.x == wallXPos) { // checks UP
+                // disable down 'W'   
+                console.log("Cannot go UP!");
+            }
+            // how can I optimize this? maybe check if y/x's align first, then within that check for CELL_WIDTH space?
+            // Note: GPU load +1-3% as this is constantly checked (Intel(R) Graphics 4600)
+            //      1-2% NVIDIA GeForce GTX960
+        } // end for 
+        
     }
     
     
