@@ -28,10 +28,14 @@ window.addEventListener("keydown",function(e){
     
     // character movement    
     switch(e.keyCode){
-        case 87: app.main.player.position.y-=30; break; // W
-        case 65: app.main.player.position.x-=30; break; // A
-        case 83: app.main.player.position.y+=30; break; // S
-        case 68: app.main.player.position.x+=30; break; // D
+        case 87: 
+            app.main.player.position.y-=30; break; // W
+        case 65: 
+            app.main.player.position.x-=30; break; // A
+        case 83: 
+            app.main.player.position.y+=30; break; // S
+        case 68: 
+            app.main.player.position.x+=30; break; // D
     } console.log("Position:" + app.main.player.position.x + "," + app.main.player.position.y);
 });
 	

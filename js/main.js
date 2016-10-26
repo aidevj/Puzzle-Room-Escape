@@ -17,7 +17,6 @@ var app = app || {};
  */
 app.main = {
     
-    
 	//  properties
     WIDTH : 660, 
     HEIGHT: 480,
@@ -74,21 +73,24 @@ app.main = {
         '#0041aa'           // (3) Door/exit
     ],
     
-    
+    panelPressToggle: false, // false - off, true - on
+    lastPressedPanel: { x: undefined, y: undefined },
+    previousNonCollidingPos: { x: undefined, y: undefined },
+
     // methods
 	init : function() {
 		console.log("app.main.init() called");
+        
 		// initialize properties
 		this.canvas = document.querySelector('canvas');
 		this.canvas.width = this.WIDTH;
 		this.canvas.height = this.HEIGHT;
 		this.ctx = this.canvas.getContext('2d');        
         
-       // load sprites
+        // load sprites
         this.loadSprites();
         
         // hook up events
-       
         
         // load level
         //this.loadMap('map_0.txt');
@@ -108,15 +110,9 @@ app.main = {
 		// schedule a call to update()
 	 	this.animationID = requestAnimationFrame(this.update.bind(this));
 	 	
-	 	// PAUSED?
-	 	// if so, bail out of loop
-        //if(this.paused){
-        //    this.drawPauseScreen(this.ctx);
-        //    return;
-        //}
+	 	// PAUSE SCREEN
  	 
 	 	// UPDATE
-        
         
         // CHECK FOR COLLISIONS
         this.checkCollisions();
@@ -130,7 +126,14 @@ app.main = {
         // Draw map
         //this.drawMap(this.walls); // ERROR:? executing before loadMap is done?
         // for now hardcode all the walls
-        this.drawWalls();
+        if (!this.panelPressToggle) {
+            this.drawWalls();
+        }
+        
+        // check lights off
+        if (this.panelPressToggle) {
+            this.lightsOff();
+        }
         
         // Draw Grid lines
         this.drawGrid(); // Grid would not draw unless it was after walls??
@@ -138,26 +141,19 @@ app.main = {
         // Draw sprites
         this.drawSprites();
         
-		// Draw HUD
-		
+		// Draw HUD	
 	},
     
     loadSprites: function() {
-        // call function constructors here
-        
+        // call function constructors here    
         this.player.position.x = this.WIDTH / 2;
         this.player.position.y = this.HEIGHT / 2;
-        
     },
     
     drawSprites: function(){        
         // drawing square as player for now
         this.ctx.fillStyle = this.player.color;
-        this.ctx.fillRect(this.player.position.x,this.player.position.y,30,30);
-        
-        
-        
-        
+        this.ctx.fillRect(this.player.position.x,this.player.position.y,30,30);     
     },
     
     // MAP LOADING (transfer to utlities?)
@@ -177,7 +173,6 @@ app.main = {
             //draw walls here?
         }
        
-        
         xhr.open('GET',path,true);
         
         // try to prevent browser caching by sending a header to the server
@@ -214,6 +209,7 @@ app.main = {
                     this.ctx.fillStyle =  '#0041aa'; 
                     break;
             } // end switch
+            
             // draw
             // x Pos = (i%22)*this.CELL_WIDTH
             // y Pos = (Math.floor(i/22)) * this.CELL_WIDTH
@@ -242,39 +238,78 @@ app.main = {
     },
     
     checkCollisions: function() {
-        for (var i=0; i<this.walls.length;i++){
-            // only check for walls (indecies of value 1)
-            if (this.walls[i] != 1) { continue; }
+        for (var i=0; i<this.walls.length;i++) {
             
-            // otherwise go on to check
             var wallXPos = (i%22)*this.CELL_WIDTH;
             var wallYPos = (Math.floor(i/22)) * this.CELL_WIDTH;
             
-            // if x or y  is within CELL_WIDTH (30px) of the wall at i, disable that direction in keys.js
-            // also check:
-            //      LEFT-RIGHT: Y's must be the same
-            //      UP-DOWN: X's must be the same
-            if (this.player.position.x + this.CELL_WIDTH == wallXPos && this.player.position.y == wallYPos) { // checks RIGHT
-                // disable right 'D'   
-                console.log("Cannot go RIGHT!");
+            // WALL CHECK
+            if (this.walls[i] == 1) {
+                // otherwise go on to check
+                // (1) if x or y  is within CELL_WIDTH (30px) of the wall at i, disable that direction in keys.js
+                // (2) check:
+                //      LEFT-RIGHT: Y's must be the same
+                //      UP-DOWN: X's must be the same
+                
+                if (this.player.position.x + this.CELL_WIDTH == wallXPos && this.player.position.y == wallYPos) { // checks RIGHT
+                    console.log("Cannot go RIGHT!");
+                    // save this current position in case tries to go on wall
+                    //this.previousNonCollidingPos.x = this.player.position.x;
+                    //this.previousNonCollidingPos.y = this.player.position.y;
+                }
+                else if (this.player.position.x - this.CELL_WIDTH == wallXPos && this.player.position.y == wallYPos) { // checks LEFT
+                    // disable right 'A' 
+                    console.log("Cannot go LEFT!");
+                }
+                else if (this.player.position.y + this.CELL_WIDTH == wallYPos && this.player.position.x == wallXPos) { // checks DOWN
+                    // disable down 'S'   
+                    console.log("Cannot go DOWN!");
+                }
+                else if (this.player.position.y - this.CELL_WIDTH == wallYPos && this.player.position.x == wallXPos) { // checks UP
+                    // disable down 'W'   
+                    console.log("Cannot go UP!");
+                }
+                
+                // if player tries to move onto wall, go to previous position
+                //if (this.player.position.x == wallXPos || this.player.position.x == wallYPos) {
+                //    this.player.position.x = this.previousNonCollidingPos.x;
+                //    this.player.position.x = this.previousNonCollidingPos.x;
+                //}
+                
+                
+                
+                // how can I optimize this? maybe check if y/x's align first, then within that check for CELL_WIDTH space?
+                // Test: GPU load +1-2% NVIDIA GeForce GTX960
+                
+                // TRY: when play position EQUALS wall position, move position to previous!!!!!!!!!!!!!!!!
+            } // END WALL CHECK
+            
+            // PANEL/DOOR CHECK
+            if (this.walls[i] == 2 || this.walls[i] == 3){
+                // when player position equals this panel execute toggle panel stuff (turn off lights)
+                if (this.player.position.x == wallXPos && this.player.position.y == wallYPos) {
+                    console.log("on a panel");
+                    
+                    // if panel is not the same as the last or undefined, toggle
+                    if ((this.lastPressedPanel.x == undefined && this.lastPressedPanel.y == undefined) || (this.player.position.x != this.lastPressedPanel.x || this.player.position.y != this.lastPressedPanel.y)){
+                        // only toggle on enter
+                        this.panelPressToggle = !this.panelPressToggle;
+                        
+                        // set this as last pressed panel
+                        this.lastPressedPanel.x = wallXPos;
+                        this.lastPressedPanel.y = wallYPos;
+                        console.log("Last pressed: " + this.lastPressedPanel.x + "," + this.lastPressedPanel.y);
+                    }
+                    
+                }
+                
             }
-            if (this.player.position.x - this.CELL_WIDTH == wallXPos && this.player.position.y == wallYPos) { // checks LEFT
-                // disable right 'A'   
-                console.log("Cannot go LEFT!");
-            }
-            if (this.player.position.y + this.CELL_WIDTH == wallYPos && this.player.position.x == wallXPos) { // checks DOWN
-                // disable down 'S'   
-                console.log("Cannot go DOWN!");
-            }
-            if (this.player.position.y - this.CELL_WIDTH == wallYPos && this.player.position.x == wallXPos) { // checks UP
-                // disable down 'W'   
-                console.log("Cannot go UP!");
-            }
-            // how can I optimize this? maybe check if y/x's align first, then within that check for CELL_WIDTH space?
-            // Note: GPU load +1-3% as this is constantly checked (Intel(R) Graphics 4600)
-            //      1-2% NVIDIA GeForce GTX960
         } // end for 
-        
+    },
+    
+    lightsOff: function() {
+        this.ctx.fillStyle = '#000';
+        this.ctx.fillRect(0,0,this.WIDTH,this.HEIGHT);
     }
     
     
@@ -285,3 +320,4 @@ app.main = {
 //      timers to complete level
 //      Switches with different effects
 //      tutorial level
+//      restart button (too hacky?)
