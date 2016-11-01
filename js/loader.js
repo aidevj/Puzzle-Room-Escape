@@ -10,8 +10,16 @@ the game will be properties of app.
 // else create a new empty object literal
 var app = app || {};
 
+// all source paths for assets
+app.imagePaths = Object.freeze({
+    playerImage: "img/samplesprite1.png",
+    //tileImage: "img/tile.png"
+ });
+
 window.onload = function(){
 	console.log("window.onload called");
+    
+    // hook up modules
     //app.sound.init();
     //app.main.sound = app.sound;
     //app.main.myKeys = app.myKeys;

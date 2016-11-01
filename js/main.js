@@ -73,6 +73,10 @@ app.main = {
         '#0041aa'           // (3) Door/exit
     ],
     
+    // image stuff
+    imagePaths: undefined,
+    playerImage: undefined,
+    
     panelPressToggle: false, // false - off, true - on
     lastPressedPanel: { x: undefined, y: undefined },
     previousNonCollidingPos: { x: undefined, y: undefined },
@@ -85,15 +89,16 @@ app.main = {
 		this.canvas = document.querySelector('canvas');
 		this.canvas.width = this.WIDTH;
 		this.canvas.height = this.HEIGHT;
-		this.ctx = this.canvas.getContext('2d');        
+		this.ctx = this.canvas.getContext('2d');    
+        this.gameState = this.GAME_STATE.BEGIN;
         
         // load sprites
         this.loadSprites();
         
         // hook up events
+        this.canvas.onmousedown = this.doMousedown.bind(this);
         
         // load level
-        //this.loadMap('map_0.txt');
         //this.reset();
         
 		// start the game loop
@@ -123,23 +128,56 @@ app.main = {
 		this.ctx.fillStyle = "#6495ED";
         this.ctx.fillRect(0,0,this.WIDTH, this.HEIGHT);
         
-        // Draw map
-        //this.drawMap(this.walls); // ERROR:? executing before loadMap is done?
-        // for now hardcode all the walls
-        if (!this.panelPressToggle) {
-            this.drawWalls();
+        // TITLE SCREEN
+        if (this.gameState == this.GAME_STATE.BEGIN)  {
+            this.panelPressToggle = false;
+            this.drawStartScreen();
         }
         
-        // check lights off
-        if (this.panelPressToggle) {
-            this.lightsOff();
-        }
+        // DURING GAME
+        if (this.gameState == this.GAME_STATE.PLAYING){
+            // Draw map
+            //this.drawMap(this.walls); // ERROR:? executing before loadMap is done?
+            // for now hardcode all the walls
+            if (!this.panelPressToggle) {
+                this.drawWalls();
+            }
+
+            // check lights off
+            if (this.panelPressToggle) {
+                this.lightsOff();
+            }
+
+            // Draw Grid lines
+            this.drawGrid(); // Grid would not draw unless it was after walls??
+
+            // INSTRUCTIONS:
+            this.ctx.save();
+            this.ctx.globalAlpha = .7;
+            this.ctx.font = "20px Arial";
+            this.ctx.textAlign='center';
+            this.ctx.fillStyle = "white";
+            this.ctx.fillText("You're the red square.", this.WIDTH/2, 80);
+            this.ctx.fillText("Move with WASD or Arrow Keys.", this.WIDTH/2, 110);
+            this.ctx.fillText("White blocks - switch panel.", this.WIDTH/2, 145);
+            this.ctx.fillText("Blue block -  exit.", this.WIDTH/2, 170);
+            this.ctx.fillText("You can only exit once you hit all the switches.", this.WIDTH/2, 265);
+            this.ctx.fillText("But once you hit a switch you'll have to traverse in the dark", this.WIDTH/2, 295);
+            this.ctx.fillText("until you find a different switch to turn it back on, or the exit", this.WIDTH/2, 325);
+            this.ctx.fillText("so try to remember the path.", this.WIDTH/2, 355);
+
+            this.ctx.font = "12px Arial";
+            this.ctx.fillText("Wall collision... still yet to work", this.WIDTH/2, 405);
+            this.ctx.restore();
+
+            // Draw sprites
+            this.drawSprites();
+        }      
         
-        // Draw Grid lines
-        this.drawGrid(); // Grid would not draw unless it was after walls??
-	   
-        // Draw sprites
-        this.drawSprites();
+        // ROUND OVER
+        if (this.gameState == this.GAME_STATE.ROUND_OVER) {
+            this.drawRoundOverScreen();
+        }
         
 		// Draw HUD	
 	},
@@ -280,36 +318,85 @@ app.main = {
                 
                 // how can I optimize this? maybe check if y/x's align first, then within that check for CELL_WIDTH space?
                 // Test: GPU load +1-2% NVIDIA GeForce GTX960
-                
-                // TRY: when play position EQUALS wall position, move position to previous!!!!!!!!!!!!!!!!
             } // END WALL CHECK
             
-            // PANEL/DOOR CHECK
+            // PANEL CHECK
             if (this.walls[i] == 2 || this.walls[i] == 3){
                 // when player position equals this panel execute toggle panel stuff (turn off lights)
                 if (this.player.position.x == wallXPos && this.player.position.y == wallYPos) {
                     console.log("on a panel");
                     
                     // if panel is not the same as the last or undefined, toggle
-                    if ((this.lastPressedPanel.x == undefined && this.lastPressedPanel.y == undefined) || (this.player.position.x != this.lastPressedPanel.x || this.player.position.y != this.lastPressedPanel.y)){
-                        // only toggle on enter
-                        this.panelPressToggle = !this.panelPressToggle;
+                    if ((this.lastPressedPanel.x == undefined && this.lastPressedPanel.y == undefined) || (this.player.position.x != this.lastPressedPanel.x || this.player.position.y != this.lastPressedPanel.y)) {
                         
-                        // set this as last pressed panel
-                        this.lastPressedPanel.x = wallXPos;
-                        this.lastPressedPanel.y = wallYPos;
-                        console.log("Last pressed: " + this.lastPressedPanel.x + "," + this.lastPressedPanel.y);
+                        
+                        // if this is a door set game state to round over
+                        if (this.walls[i] == 3 && this.lastPressedPanel.x == 120 && this.lastPressedPanel.y == 210) {
+                            // SET HERE RULES THAT ALL PANELS MUST BE PRESSED FIRST (hardcoded in if statement for now)
+                            
+                            
+                            this.gameState = this.GAME_STATE.ROUND_OVER;
+                            // reset last panels and player pos 
+                            // THIS WILL BE CHANGED LATER, different start locations for different levels
+                            this.lastPressedPanel.x = undefined;
+                            this.lastPressedPanel.y = undefined;
+                            this.player.position.x = Math.floor(this.WIDTH/2);
+                            this.player.position.y = Math.floor(this.HEIGHT/2);
+                        }
+                        
+                        if (this.walls[i] != 3) {
+                            // only toggle on enter
+                            this.panelPressToggle = !this.panelPressToggle;
+                            // otherwise set this as last pressed panel
+                            this.lastPressedPanel.x = wallXPos;
+                            this.lastPressedPanel.y = wallYPos;
+                            console.log("Last pressed: " + this.lastPressedPanel.x + "," + this.lastPressedPanel.y);
+                        }
+                        
                     }
-                    
                 }
-                
-            }
+            }// end if            
         } // end for 
     },
     
     lightsOff: function() {
         this.ctx.fillStyle = '#000';
         this.ctx.fillRect(0,0,this.WIDTH,this.HEIGHT);
+    },
+    
+    drawStartScreen: function() {
+        this.ctx.save();
+        this.ctx.font = "30px Arial";
+        this.ctx.textAlign='center';
+        this.ctx.fillStyle = "white";
+        this.ctx.fillText("PUZZLE PANEL ESCAPE!!!", this.WIDTH/2, this.HEIGHT/2);
+        this.ctx.fillText("Click to start.", this.WIDTH/2, this.HEIGHT/2 + 50);
+        this.ctx.restore();
+    },
+    
+    drawRoundOverScreen: function() {
+        this.ctx.globalAlpha = .5;
+        this.ctx.fillStyle = "#6495ED";
+        this.ctx.fillRect(0,0,this.WIDTH,this.HEIGHT);
+        
+        this.ctx.globalAlpha = 1;
+        this.ctx.font = "20px Arial";
+        this.ctx.textAlign='center';
+        this.ctx.fillStyle = "white";
+        this.ctx.fillText("You've escaped!", this.WIDTH/2, 80);
+    },
+    
+    doMousedown: function(e) {
+        if (this.gameState == this.GAME_STATE.BEGIN) {
+            this.gameState = this.GAME_STATE.PLAYING;
+            return;
+        }
+        
+        if (this.gameState == this.GAME_STATE.ROUND_OVER) {
+            // reset for now
+            this.gameState = this.GAME_STATE.BEGIN;
+            return;
+        }
     }
     
     
