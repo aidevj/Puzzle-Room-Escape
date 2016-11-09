@@ -1,20 +1,9 @@
 // main.js
-// Dependencies: 
-// Description: singleton object
-// This object will be our main "controller" class and will contain references
-// to most of the other objects in the game.
 
 'use strict';
 
-// if app exists use the existing copy
-// else create a new object literal
 var app = app || {};
 
-/*
- .main is an object literal that is a property of the app global
- This object literal has its own properties and methods (functions)
- 
- */
 app.main = {
     
 	//  properties
@@ -22,7 +11,7 @@ app.main = {
     HEIGHT: 480,
     canvas: undefined,
     ctx: undefined,
-   	lastTime: 0, // used by calculateDeltaTime() 
+   	lastTime: 0, 
     debug: true,
     
     gameState: undefined,
@@ -32,7 +21,7 @@ app.main = {
     animationID: 0,
     debug: true,
     
-    GAME_STATE: { //  fake enumeration
+    GAME_STATE: {
         BEGIN: 0,
         PLAYING: 1,
         PAUSE: 2,
@@ -46,7 +35,7 @@ app.main = {
         color: 'red'
     },
     
-    //walls: [], // temporarily hardcoded, to be read from file (not working) later
+    walls: [], // temporarily hardcoded, to be read from file (not working) later /*
     walls: [
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
@@ -64,7 +53,7 @@ app.main = {
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-    ],
+    ],/**/
     CELL_WIDTH: 30, // grid cell size in px
     MAP_COLORS: [ // maybe not use this? not needed right now since colors are hardcoded: see drawWalls
         'rgba(0,0,0,0)',    // (0) empty space
@@ -72,6 +61,10 @@ app.main = {
         '#fff',             // (2) panel (unpressed- once pressed, can only be let up by reaching a door or pressing another panel)
         '#0041aa'           // (3) Door/exit
     ],
+    
+    // image stuff
+    imagePaths: undefined,
+    playerImage: undefined,
     
     panelPressToggle: false, // false - off, true - on
     lastPressedPanel: { x: undefined, y: undefined },
@@ -88,14 +81,24 @@ app.main = {
 		this.ctx = this.canvas.getContext('2d');    
         this.gameState = this.GAME_STATE.BEGIN;
         
+        
+        // load images // need onload
+        /*var image = new Image();                                      // animatedsprite loading
+        image.onload = function() {
+          console.log("img loaded");  
+        };
+        image.src = this.imagePaths.playerImage;
+        this.playerImage = image;*/
+        
         // load sprites
         this.loadSprites();
+        //this.createPlayerSprite(this.WIDTH/2, this.HEIGHT/2);         // animatedsprite loading
         
         // hook up events
         this.canvas.onmousedown = this.doMousedown.bind(this);
         
         // load level
-        //this.reset();
+        //this.reset();                                                   // map loading in from external
         
 		// start the game loop
 		this.update();
@@ -103,24 +106,21 @@ app.main = {
     
     reset: function(){
         // read in map
-        this.loadMap('map_0.txt');
+        this.loadMap('maps/map_0.txt');
     },
 	
 	update: function () {
-		// LOOP
-		// schedule a call to update()
 	 	this.animationID = requestAnimationFrame(this.update.bind(this));
 	 	
-	 	// PAUSE SCREEN
+	 	// PAUSE SCREEN - TO DO
  	 
 	 	// UPDATE
         
         // CHECK FOR COLLISIONS
         this.checkCollisions();
-        // TO DO CHECK IF WALLS OR DOORS NEXT TO PLAYER
 
 		// DRAWING GOES UNDER HERE
-		// 1-Background
+		// Redraw background
 		this.ctx.fillStyle = "#6495ED";
         this.ctx.fillRect(0,0,this.WIDTH, this.HEIGHT);
         
@@ -145,7 +145,7 @@ app.main = {
             }
 
             // Draw Grid lines
-            this.drawGrid(); // Grid would not draw unless it was after walls??
+            this.drawGrid(); // does not draw unless called after wall draw call
 
             // INSTRUCTIONS:
             this.ctx.save();
@@ -168,6 +168,8 @@ app.main = {
 
             // Draw sprites
             this.drawSprites();
+            //this.drawPlayerSprite();                                      // animatedsprite loading
+            
         }      
         
         // ROUND OVER
@@ -178,19 +180,39 @@ app.main = {
 		// Draw HUD	
 	},
     
-    loadSprites: function() {
+    ///////////////////////////////////////////////////////
+    ///             SPRITE STUFF                        ///
+    ///////////////////////////////////////////////////////
+    loadSprites: function() {   // mock-up blocks
         // call function constructors here    
         this.player.position.x = this.WIDTH / 2;
         this.player.position.y = this.HEIGHT / 2;
     },
     
-    drawSprites: function(){        
+    drawSprites: function(){     // mock-up blocks   
         // drawing square as player for now
         this.ctx.fillStyle = this.player.color;
         this.ctx.fillRect(this.player.position.x,this.player.position.y,30,30);     
     },
     
-    // MAP LOADING (transfer to utlities?)
+    createPlayerSprite: function(x, y) { // loading sprites from spritesheets
+        // AnimatedSprite(image, width, height, frameWidth, frameHeight, frameDelay)
+        var spr = new app.AnimatedSprite(this.playerImage,128,192,32,48,1/3);
+        spr.x = x;
+        spr.y = y;
+    },
+    
+    drawPlayerSprite: function() { // loading sprites from spritesheets
+        spr.draw(this.ctx);
+        
+    },
+    
+    
+    
+    
+    ///////////////////////////////////////////////////////
+    /// MAP LOADING & DRAWING(transfer to utlities?)    ///
+    ///////////////////////////////////////////////////////
     loadMap: function(path){
         var xhr = new XMLHttpRequest();
         
@@ -270,6 +292,13 @@ app.main = {
             this.ctx.stroke();
         }  
     },
+    ///////////////////////////////////////////////////////
+    ///              END MAP LOADING                    ///
+    ///////////////////////////////////////////////////////
+    
+    
+    
+    
     
     checkCollisions: function() {
         for (var i=0; i<this.walls.length;i++) {
@@ -277,6 +306,7 @@ app.main = {
             var wallXPos = (i%22)*this.CELL_WIDTH;
             var wallYPos = (Math.floor(i/22)) * this.CELL_WIDTH;
             
+            ////////////////////////////////////////////////////////////////WALL PROBLEMS
             // WALL CHECK
             if (this.walls[i] == 1) {
                 // otherwise go on to check
@@ -396,11 +426,4 @@ app.main = {
     }
     
     
-    
 }; // end app.main
-
-// Add later: 
-//      timers to complete level
-//      Switches with different effects
-//      tutorial level
-//      restart button (too hacky?)
