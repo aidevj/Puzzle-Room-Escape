@@ -29,13 +29,17 @@ window.addEventListener("keydown",function(e){
     // character movement    
     switch(e.keyCode){
         case 87: 
-            app.main.player.position.y-=30; break; // W
+        case 38: 
+            app.main.player.position.y-=30; break; // W (up)
         case 65: 
-            app.main.player.position.x-=30; break; // A
+        case 37:
+            app.main.player.position.x-=30; break; // A (left)
         case 83: 
-            app.main.player.position.y+=30; break; // S
-        case 68: 
-            app.main.player.position.x+=30; break; // D
+        case 40:
+            app.main.player.position.y+=30; break; // S (down)
+        case 68:
+        case 39:
+            app.main.player.position.x+=30; break; // D (right)
     } console.log("Position:" + app.main.player.position.x + "," + app.main.player.position.y);
 });
 	

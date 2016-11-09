@@ -73,10 +73,6 @@ app.main = {
         '#0041aa'           // (3) Door/exit
     ],
     
-    // image stuff
-    imagePaths: undefined,
-    playerImage: undefined,
-    
     panelPressToggle: false, // false - off, true - on
     lastPressedPanel: { x: undefined, y: undefined },
     previousNonCollidingPos: { x: undefined, y: undefined },

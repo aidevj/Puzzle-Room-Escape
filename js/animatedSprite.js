@@ -9,7 +9,7 @@ app.AnimatedSprite = function(){
 		this.xVelocity = 0
 		this.yVelocity = 0;
 		this.image = image;
-		this.color = "red";
+		//this.color = "red";
 		this.active = true;
 		
 		// new
