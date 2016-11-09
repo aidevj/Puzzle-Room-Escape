@@ -35,30 +35,13 @@ app.main = {
         color: 'red'
     },
     
-    walls: [], // temporarily hardcoded, to be read from file (not working) later /*
-    walls: [
-        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-    ],/**/
+    currentLevel: 0,        // increment on level win
+    currentMap: [], 
     CELL_WIDTH: 30, // grid cell size in px
-    MAP_COLORS: [ // maybe not use this? not needed right now since colors are hardcoded: see drawWalls
+    MAP_COLORS: [
         'rgba(0,0,0,0)',    // (0) empty space
         '#000',             // (1) wall (black)
-        '#fff',             // (2) panel (unpressed- once pressed, can only be let up by reaching a door or pressing another panel)
+        '#fff',             // (2) panel (unpressed- once pressed, can only be let up by reaching a door or pressing another panel) // can't even see when dark
         '#0041aa'           // (3) Door/exit
     ],
     
@@ -98,7 +81,7 @@ app.main = {
         this.canvas.onmousedown = this.doMousedown.bind(this);
         
         // load level
-        //this.reset();                                                   // map loading in from external
+        this.reset();
         
 		// start the game loop
 		this.update();
@@ -119,7 +102,7 @@ app.main = {
         // CHECK FOR COLLISIONS
         this.checkCollisions();
 
-		// DRAWING GOES UNDER HERE
+		//////DRAWING GOES UNDER HERE//////
 		// Redraw background
 		this.ctx.fillStyle = "#6495ED";
         this.ctx.fillRect(0,0,this.WIDTH, this.HEIGHT);
@@ -132,15 +115,10 @@ app.main = {
         
         // DURING GAME
         if (this.gameState == this.GAME_STATE.PLAYING){
-            // Draw map
-            //this.drawMap(this.walls); // ERROR:? executing before loadMap is done?
-            // for now hardcode all the walls
-            if (!this.panelPressToggle) {
-                this.drawWalls();
-            }
-
-            // check lights off
-            if (this.panelPressToggle) {
+            if (!this.panelPressToggle) {   // Draw map
+                this.drawMap(this.currentMap);
+            }            
+            if (this.panelPressToggle) {    // check lights off
                 this.lightsOff();
             }
 
@@ -208,8 +186,6 @@ app.main = {
     },
     
     
-    
-    
     ///////////////////////////////////////////////////////
     /// MAP LOADING & DRAWING(transfer to utlities?)    ///
     ///////////////////////////////////////////////////////
@@ -224,9 +200,10 @@ app.main = {
                 gridArray[i]= line.split(',');
             }
             
-            this.walls = gridArray;
-            console.log(this.walls);
-            //draw walls here?
+            app.main.currentMap = gridArray;
+            console.log(app.main.currentMap);
+            
+            //app.main.update();
         }
        
         xhr.open('GET',path,true);
@@ -244,34 +221,9 @@ app.main = {
                 var value = inner[j]; // ERROR: map[i][j] = undefined (the j at that i)?? then bailing out
                 
                 this.ctx.fillStyle = this.MAP_COLORS[value]; // set to the correct color
-                this.ctx.fillRect(i * this.CELL_WIDTH, j * this.CELL_WIDTH, this.CELL_WIDTH, this.CELL_WIDTH);
+                this.ctx.fillRect(j * this.CELL_WIDTH, i * this.CELL_WIDTH, this.CELL_WIDTH, this.CELL_WIDTH);
             } // end j for
         } // end i for
-    },
-    
-    drawWalls: function(){ // misnomer: this also draws panels and doors for now
-        for (var i=0; i<this.walls.length; i++){
-            this.ctx.save();
-            switch(this.walls[i]){ // block type
-                case 0: // nothing
-                    break;
-                case 1: // Black Walls
-                    this.ctx.fillStyle =  '#000'; 
-                    break;
-                case 2: // white panels
-                    this.ctx.fillStyle =  '#fff'; 
-                    break;
-                case 3: // white unpressed panels
-                    this.ctx.fillStyle =  '#0041aa'; 
-                    break;
-            } // end switch
-            
-            // draw
-            // x Pos = (i%22)*this.CELL_WIDTH
-            // y Pos = (Math.floor(i/22)) * this.CELL_WIDTH
-            this.ctx.fillRect((i%22)*this.CELL_WIDTH, (Math.floor(i/22)) * this.CELL_WIDTH, this.CELL_WIDTH, this.CELL_WIDTH);
-            this.ctx.restore();
-        }
     },
     
     drawGrid: function() {
@@ -296,92 +248,92 @@ app.main = {
     ///              END MAP LOADING                    ///
     ///////////////////////////////////////////////////////
     
-    
-    
-    
+       
     
     checkCollisions: function() {
-        for (var i=0; i<this.walls.length;i++) {
-            
-            var wallXPos = (i%22)*this.CELL_WIDTH;
-            var wallYPos = (Math.floor(i/22)) * this.CELL_WIDTH;
-            
-            ////////////////////////////////////////////////////////////////WALL PROBLEMS
-            // WALL CHECK
-            if (this.walls[i] == 1) {
-                // otherwise go on to check
-                // (1) if x or y  is within CELL_WIDTH (30px) of the wall at i, disable that direction in keys.js
-                // (2) check:
-                //      LEFT-RIGHT: Y's must be the same
-                //      UP-DOWN: X's must be the same
-                
-                if (this.player.position.x + this.CELL_WIDTH == wallXPos && this.player.position.y == wallYPos) { // checks RIGHT
-                    console.log("Cannot go RIGHT!");
-                    // save this current position in case tries to go on wall
-                    //this.previousNonCollidingPos.x = this.player.position.x;
-                    //this.previousNonCollidingPos.y = this.player.position.y;
-                }
-                else if (this.player.position.x - this.CELL_WIDTH == wallXPos && this.player.position.y == wallYPos) { // checks LEFT
-                    // disable right 'A' 
-                    console.log("Cannot go LEFT!");
-                }
-                else if (this.player.position.y + this.CELL_WIDTH == wallYPos && this.player.position.x == wallXPos) { // checks DOWN
-                    // disable down 'S'   
-                    console.log("Cannot go DOWN!");
-                }
-                else if (this.player.position.y - this.CELL_WIDTH == wallYPos && this.player.position.x == wallXPos) { // checks UP
-                    // disable down 'W'   
-                    console.log("Cannot go UP!");
-                }
-                
-                // if player tries to move onto wall, go to previous position
-                //if (this.player.position.x == wallXPos || this.player.position.x == wallYPos) {
-                //    this.player.position.x = this.previousNonCollidingPos.x;
-                //    this.player.position.x = this.previousNonCollidingPos.x;
-                //}
-                
-                
-                
-                // how can I optimize this? maybe check if y/x's align first, then within that check for CELL_WIDTH space?
-                // Test: GPU load +1-2% NVIDIA GeForce GTX960
-            } // END WALL CHECK
-            
-            // PANEL CHECK
-            if (this.walls[i] == 2 || this.walls[i] == 3){
-                // when player position equals this panel execute toggle panel stuff (turn off lights)
-                if (this.player.position.x == wallXPos && this.player.position.y == wallYPos) {
-                    console.log("on a panel");
-                    
-                    // if panel is not the same as the last or undefined, toggle
-                    if ((this.lastPressedPanel.x == undefined && this.lastPressedPanel.y == undefined) || (this.player.position.x != this.lastPressedPanel.x || this.player.position.y != this.lastPressedPanel.y)) {
-                        
-                        
-                        // if this is a door set game state to round over
-                        if (this.walls[i] == 3 && this.lastPressedPanel.x == 120 && this.lastPressedPanel.y == 210) {
-                            // SET HERE RULES THAT ALL PANELS MUST BE PRESSED FIRST (hardcoded in if statement for now)
-                            
-                            
-                            this.gameState = this.GAME_STATE.ROUND_OVER;
-                            // reset last panels and player pos 
-                            // THIS WILL BE CHANGED LATER, different start locations for different levels
-                            this.lastPressedPanel.x = undefined;
-                            this.lastPressedPanel.y = undefined;
-                            this.player.position.x = Math.floor(this.WIDTH/2);
-                            this.player.position.y = Math.floor(this.HEIGHT/2);
-                        }
-                        
-                        if (this.walls[i] != 3) {
-                            // only toggle on enter
-                            this.panelPressToggle = !this.panelPressToggle;
-                            // otherwise set this as last pressed panel
-                            this.lastPressedPanel.x = wallXPos;
-                            this.lastPressedPanel.y = wallYPos;
-                            console.log("Last pressed: " + this.lastPressedPanel.x + "," + this.lastPressedPanel.y);
-                        }
-                        
+        for (var i=0; i<this.currentMap.length;i++) {
+            for (var j=0; j<this.currentMap[i].length; j++){
+
+                var wallXPos = (j)*this.CELL_WIDTH;
+                var wallYPos = (i) * this.CELL_WIDTH;
+                //console.log("i:" + i + ", j:" + j);
+
+                // WALL CHECK
+                if (this.currentMap[i][j] == 1) {
+                    // otherwise go on to check
+                    // (1) if x or y  is within CELL_WIDTH (30px) of the wall at i, disable that direction in keys.js
+                    // (2) check:
+                    //      LEFT-RIGHT: Y's must be the same
+                    //      UP-DOWN: X's must be the same
+
+                    if (this.player.position.x + this.CELL_WIDTH == wallXPos && this.player.position.y == wallYPos) { // checks RIGHT
+                        console.log("Cannot go RIGHT!");
+                        // save this current position in case tries to go on wall
+                        //this.previousNonCollidingPos.x = this.player.position.x;
+                        //this.previousNonCollidingPos.y = this.player.position.y;
                     }
-                }
-            }// end if            
+                    else if (this.player.position.x - this.CELL_WIDTH == wallXPos && this.player.position.y == wallYPos) { // checks LEFT
+                        // disable right 'A' 
+                        console.log("Cannot go LEFT!");
+                    }
+                    else if (this.player.position.y + this.CELL_WIDTH == wallYPos && this.player.position.x == wallXPos) { // checks DOWN
+                        // disable down 'S'   
+                        console.log("Cannot go DOWN!");
+                    }
+                    else if (this.player.position.y - this.CELL_WIDTH == wallYPos && this.player.position.x == wallXPos) { // checks UP
+                        // disable down 'W'   
+                        console.log("Cannot go UP!");
+                    }
+
+                    // if player tries to move onto wall, go to previous position
+                    //if (this.player.position.x == wallXPos || this.player.position.x == wallYPos) {
+                    //    this.player.position.x = this.previousNonCollidingPos.x;
+                    //    this.player.position.x = this.previousNonCollidingPos.x;
+                    //}
+
+
+
+                    // how can I optimize this? maybe check if y/x's align first, then within that check for CELL_WIDTH space?
+                    // Test: GPU load +1-2% NVIDIA GeForce GTX960
+                } // END WALL CHECK
+
+                // PANEL CHECK
+                if (this.currentMap[i][j] == 2 || this.currentMap[i][j] == 3){ /////////// needs 2d position
+                    // when player position equals this panel execute toggle panel stuff (turn off lights)
+                    if (this.player.position.x == wallXPos && this.player.position.y == wallYPos) {
+                        console.log("on a panel");
+
+                        // if panel is not the same as the last or undefined, toggle
+                        if ((this.lastPressedPanel.x == undefined && this.lastPressedPanel.y == undefined) || (this.player.position.x != this.lastPressedPanel.x || this.player.position.y != this.lastPressedPanel.y)) {
+
+
+                            // if this is a door set game state to round over
+                            if (this.currentMap[i][j] == 3 && this.lastPressedPanel.x == 120 && this.lastPressedPanel.y == 210) {
+                                // SET HERE RULES THAT ALL PANELS MUST BE PRESSED FIRST (hardcoded in if statement for now)
+
+
+                                this.gameState = this.GAME_STATE.ROUND_OVER;
+                                // reset last panels and player pos 
+                                // THIS WILL BE CHANGED LATER, different start locations for different levels
+                                this.lastPressedPanel.x = undefined;
+                                this.lastPressedPanel.y = undefined;
+                                this.player.position.x = Math.floor(this.WIDTH/2);
+                                this.player.position.y = Math.floor(this.HEIGHT/2);
+                            }
+
+                            if (this.currentMap[i][j] != 3) {
+                                // only toggle on enter
+                                this.panelPressToggle = !this.panelPressToggle;
+                                // otherwise set this as last pressed panel
+                                this.lastPressedPanel.x = wallXPos;
+                                this.lastPressedPanel.y = wallYPos;
+                                console.log("Last pressed: " + this.lastPressedPanel.x + "," + this.lastPressedPanel.y);
+                            }
+
+                        }
+                    } // end inner if
+                } // end if   
+            } // end inner for
         } // end for 
     },
     
