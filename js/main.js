@@ -35,18 +35,13 @@ app.main = {
         color: 'red'
     },
     
-    currentLevel: 0,        // increment on level win
-    currentMap: [], 
-    CELL_WIDTH: 30,         // grid cell size in px
-    /*MAP_COLORS: [
-        'rgba(0,0,0,0)',    // (0) empty space (floor)
-        '#000',             // (1) wall (black)
-        '#fff',             // (2) panel (unpressed- once pressed, can only be let up by reaching a door or pressing another panel) // can't even see when dark
-        '#0041aa'           // (3) Door/exit
-    ],*/
+    // Map Properties
+    currentMap: [],         // loaded in from txt file
+    CELL_WIDTH: 30,         // grid cell size in px    
+    ROWS: 16,
+    COLUMNS: 22,
     
-    ///////////////////////////////////////////////IMAGELOADING
-    // image stuff
+    // image loading and drawing
     imagePaths: undefined,
     playerImage: undefined,
     MAP_IMAGES: [
@@ -56,9 +51,20 @@ app.main = {
         { doorImage: undefined }    // 3
     ],
     
+    // Level Properties
+    currentLevel: -1,        // begin at negative state, will increment when level is loaded
+    mapPaths: [
+        'maps/map_0.txt',
+        'maps/map_1.txt',
+        'maps/map_2.txt',
+        'maps/map_3.txt'
+    ],
+    currentPanels: [],          // array of panel locations for current level, initiated in loadMap() function
+    currentPanelsStates: [],    // array of booleans in correspondance so 
     panelPressToggle: false, // false - off, true - on
     lastPressedPanel: { x: undefined, y: undefined },
     previousNonCollidingPos: { x: undefined, y: undefined },
+    
 
     // methods
 	init : function() {
@@ -74,57 +80,36 @@ app.main = {
         
         ///////////////////////////////////////////////IMAGELOADING
         var image = new Image();
-        image.onload = function() {
-          console.log("img loaded");  
-        };
-        //image.src = this.imagePaths.playerImage;
-        //this.playerImage = image;
-        var image = new Image();
-        image.onload = function() {
-          console.log("img loaded");  
-        };
-        image.src = this.imagePaths.floorImage;
-        this.MAP_IMAGES[0] = image;
-        
-        image = new Image();
-        image.onload = function() {
-          console.log("img loaded");  
-        };
-        image.src = this.imagePaths.wallImage;
-        this.MAP_IMAGES[1] = image;
-        
-        image = new Image(); 
-        image.onload = function() {
-          console.log("img loaded");  
-        };
-        image.src = this.imagePaths.panelImage;
-        this.MAP_IMAGES[2] = image;
-        
-        image = new Image();
-        image.onload = function() {
-          console.log("img loaded");  
-        };
-        image.src = this.imagePaths.doorImage;
-        this.MAP_IMAGES[3] = image;
+        for (var i=0; i<this.imagePaths.length;i++) {
+            image = new Image();
+            image.onload = function() {
+              console.log("asset loaded");  
+            };
+            image.src = this.imagePaths[i];
+            this.MAP_IMAGES[i] = image;
+        }
         
         
         // load sprites
         this.loadSprites();
-        //this.createPlayerSprite(this.WIDTH/2, this.HEIGHT/2);         // animatedsprite loading
+        //this.createPlayerSprite(this.WIDTH/2, this.HEIGHT/2);// animatedsprite loading
         
         // hook up events
         this.canvas.onmousedown = this.doMousedown.bind(this);
         
         // load level
-        this.reset();
+        this.loadLevel();
         
 		// start the game loop
 		this.update();
 	},
     
-    reset: function(){
+    loadLevel: function(){
+        // LOAD CURRENT LEVEL
+        this.currentLevel++; 
+        this.panelPressToggle = false;
         // read in map
-        this.loadMap('maps/map_0.txt');
+        this.loadMap(this.mapPaths[this.currentLevel]);    
     },
 	
 	update: function () {
@@ -194,7 +179,7 @@ app.main = {
 	},
     
     ///////////////////////////////////////////////////////
-    ///             SPRITE STUFF                        ///
+    ///             PLAYER SPRITE FUNCTIONS             ///
     ///////////////////////////////////////////////////////
     loadSprites: function() {   // mock-up blocks
         // call function constructors here    
@@ -220,11 +205,15 @@ app.main = {
         
     },
     
+     
+    ///////////////////////////////////////////////////////
+    ///          END PLAYER SPRITE FUNCTIONS            ///
+    ///////////////////////////////////////////////////////
     
     ///////////////////////////////////////////////////////
     /// MAP LOADING & DRAWING(transfer to utlities?)    ///
     ///////////////////////////////////////////////////////
-    loadMap: function(path){
+    loadMap: function(path){        // call once every new level load
         var xhr = new XMLHttpRequest();
         
         xhr.onload = function(){
@@ -236,9 +225,10 @@ app.main = {
             }
             
             app.main.currentMap = gridArray;
-            console.log(app.main.currentMap);
+            //console.log(app.main.currentMap);
             
             //app.main.update();
+            app.main.loadPanelData(app.main.currentMap);
         }
        
         xhr.open('GET',path,true);
@@ -248,14 +238,38 @@ app.main = {
         xhr.send();
     },
     
-    drawMap: function(map) {
-        //debugger;
-        for (var i=0; i<16; i++) { // hardcoded number of rows canvas HEIGHT / CELL_WIDTH
+    loadPanelData: function(map) {  // call once every new level load
+        // if arrays not empty, empty them
+        if (this.currentPanels.length > 0) {
+            this.currentPanels.length = 0;
+            this.currentPanelsStates.length = 0;
+        }
+        
+        // load in panels
+        for (var i=0; i<this.ROWS; i++) { // hardcoded number of rows canvas HEIGHT / CELL_WIDTH
             var inner = map[i];
-            for (var j=0; j<22; j++) {
+            for (var j=0; j<this.COLUMNS; j++) {
                 var value = inner[j];
                 
-                ///////////////////////////////////////////////IMAGELOADING
+                // if panel push onto current panels array
+                // also create a false (not yet pressed) bool in panelState array
+                if (value == 2){
+                    this.currentPanels.push([j * this.CELL_WIDTH, i * this.CELL_WIDTH]);
+                    this.currentPanelsStates.push(false);
+                }
+            }   // end j
+        }   // end i
+        console.log("currentPanels (locations) array:" + this.currentPanels);  
+        console.log("currentPanelsStates array:" + this.currentPanelsStates);  
+    },
+    
+    drawMap: function(map) {
+        //debugger;
+        for (var i=0; i<this.ROWS; i++) { // hardcoded number of rows canvas HEIGHT / CELL_WIDTH
+            var inner = map[i];
+            for (var j=0; j<this.COLUMNS; j++) {
+                var value = inner[j];
+                
                 this.ctx.drawImage(this.MAP_IMAGES[value],j * this.CELL_WIDTH, i * this.CELL_WIDTH, this.CELL_WIDTH, this.CELL_WIDTH);
             } // end j for
         } // end i for
@@ -290,8 +304,7 @@ app.main = {
             for (var j=0; j<this.currentMap[i].length; j++){
 
                 var wallXPos = (j)*this.CELL_WIDTH;
-                var wallYPos = (i) * this.CELL_WIDTH;
-                //console.log("i:" + i + ", j:" + j);
+                var wallYPos = (i)*this.CELL_WIDTH;
 
                 // WALL CHECK
                 if (this.currentMap[i][j] == 1) {
@@ -377,6 +390,10 @@ app.main = {
         this.ctx.fillRect(0,0,this.WIDTH,this.HEIGHT);
     },
     
+    ///////////////////////////////////////////////////////
+    ///                 SCREEN DRAWING                  ///
+    ///////////////////////////////////////////////////////
+    
     drawStartScreen: function() {
         this.ctx.save();
         this.ctx.font = "30px Arial";
@@ -397,7 +414,12 @@ app.main = {
         this.ctx.textAlign='center';
         this.ctx.fillStyle = "white";
         this.ctx.fillText("You've escaped!", this.WIDTH/2, 80);
+        this.ctx.fillText("Click to continue to level: " + this.currentLevel+1, this.WIDTH/2, 110);
     },
+    
+    ///////////////////////////////////////////////////////
+    ///              END SCREENS DRAWING                ///
+    ///////////////////////////////////////////////////////
     
     doMousedown: function(e) {
         if (this.gameState == this.GAME_STATE.BEGIN) {
@@ -406,8 +428,8 @@ app.main = {
         }
         
         if (this.gameState == this.GAME_STATE.ROUND_OVER) {
-            // reset for now
-            this.gameState = this.GAME_STATE.BEGIN;
+            this.loadLevel();
+            this.gameState = this.GAME_STATE.PLAYING;
             return;
         }
     }
