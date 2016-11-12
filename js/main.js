@@ -37,7 +37,7 @@ app.main = {
     
     currentLevel: 0,        // increment on level win
     currentMap: [], 
-    CELL_WIDTH: 30, // grid cell size in px
+    CELL_WIDTH: 30,         // grid cell size in px
     /*MAP_COLORS: [
         'rgba(0,0,0,0)',    // (0) empty space (floor)
         '#000',             // (1) wall (black)
@@ -45,16 +45,16 @@ app.main = {
         '#0041aa'           // (3) Door/exit
     ],*/
     
-    /////////////////////////////////////////////////////////////////////////////////// IMAGELOADING
+    ///////////////////////////////////////////////IMAGELOADING
     // image stuff
     imagePaths: undefined,
     playerImage: undefined,
-    MAP_IMAGES: {
-        floorImage: undefined,
-        panelImage: undefined,
-        wallImage: undefined,
-        doorImage: undefined
-    },            //
+    MAP_IMAGES: [
+        { floorImage: undefined },  // 0
+        { panelImage: undefined },  // 1
+        { wallImage: undefined },   // 2
+        { doorImage: undefined }    // 3
+    ],
     
     panelPressToggle: false, // false - off, true - on
     lastPressedPanel: { x: undefined, y: undefined },
@@ -72,36 +72,40 @@ app.main = {
         this.gameState = this.GAME_STATE.BEGIN;
         
         
-        /////////////////////////////////////////////////////////////////////////////////// IMAGELOADING
+        ///////////////////////////////////////////////IMAGELOADING
+        var image = new Image();
+        image.onload = function() {
+          console.log("img loaded");  
+        };
         //image.src = this.imagePaths.playerImage;
         //this.playerImage = image;
-        var image = new Image();   
+        var image = new Image();
+        image.onload = function() {
+          console.log("img loaded");  
+        };
         image.src = this.imagePaths.floorImage;
+        this.MAP_IMAGES[0] = image;
+        
+        image = new Image();
         image.onload = function() {
           console.log("img loaded");  
         };
-        this.MAP_IMAGES.floorImage = image;
-        
-        image = new Image();
         image.src = this.imagePaths.wallImage;
+        this.MAP_IMAGES[1] = image;
+        
+        image = new Image(); 
         image.onload = function() {
           console.log("img loaded");  
         };
-        this.MAP_IMAGES.wallImage = image;
-        
-        image = new Image();
         image.src = this.imagePaths.panelImage;
-        image.onload = function() {
-          console.log("img loaded");  
-        };
-        this.MAP_IMAGES.panelImage = image;
+        this.MAP_IMAGES[2] = image;
         
         image = new Image();
-        image.src = this.imagePaths.doorImage;
         image.onload = function() {
           console.log("img loaded");  
         };
-        this.MAP_IMAGES.doorImage = image;
+        image.src = this.imagePaths.doorImage;
+        this.MAP_IMAGES[3] = image;
         
         
         // load sprites
@@ -251,25 +255,8 @@ app.main = {
             for (var j=0; j<22; j++) {
                 var value = inner[j];
                 
-                //this.ctx.fillStyle = this.MAP_COLORS[value]; // set to the correct color
-                //this.ctx.fillRect(j * this.CELL_WIDTH, i * this.CELL_WIDTH, this.CELL_WIDTH, //this.CELL_WIDTH);
-                //this.ctx.drawImage(this.MAP_IMAGES[value],j * this.CELL_WIDTH, i * this.CELL_WIDTH, this.CELL_WIDTH, this.CELL_WIDTH);
-                
-                /////////////////////////////////////////////////////////////////////////////////// IMAGELOADING
-                switch(value){
-                    case 0:
-                        this.ctx.drawImage(this.MAP_IMAGES.floorImage,j * this.CELL_WIDTH, i * this.CELL_WIDTH, this.CELL_WIDTH, this.CELL_WIDTH);
-                        break;
-                    case 1:
-                        this.ctx.drawImage(this.MAP_IMAGES.wallImage,j * this.CELL_WIDTH, i * this.CELL_WIDTH, this.CELL_WIDTH, this.CELL_WIDTH);
-                        break;
-                    case 2:
-                        this.ctx.drawImage(this.MAP_IMAGES.panelImage,j * this.CELL_WIDTH, i * this.CELL_WIDTH, this.CELL_WIDTH, this.CELL_WIDTH);
-                        break;
-                    case 3:
-                        this.ctx.drawImage(this.MAP_IMAGES.doorImage,j * this.CELL_WIDTH, i * this.CELL_WIDTH, this.CELL_WIDTH, this.CELL_WIDTH);
-                        break;
-                }
+                ///////////////////////////////////////////////IMAGELOADING
+                this.ctx.drawImage(this.MAP_IMAGES[value],j * this.CELL_WIDTH, i * this.CELL_WIDTH, this.CELL_WIDTH, this.CELL_WIDTH);
             } // end j for
         } // end i for
     },
