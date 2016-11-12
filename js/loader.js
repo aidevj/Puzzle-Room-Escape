@@ -1,20 +1,27 @@
-/*
-loader.js
-variable 'app' is in global scope - i.e. a property of window.
-app is our single global object literal - all other functions and properties of 
-the game will be properties of app.
-*/
 "use strict";
 
-// if app exists use the existing copy
-// else create a new empty object literal
 var app = app || {};
+
+// initialize image sources
+app.imagePaths = Object.freeze({
+    playerImage: "img/samplesprite1.png",
+    //tileImage: "img/tile.png"
+    floorImage: "assets/floor.png",
+    wallImage: "assets/wall.png",
+    panelImage: "assets/panel.png",
+    doorImage: "assets/door.png"
+ });
 
 window.onload = function(){
 	console.log("window.onload called");
+    
+    // hook up modules
     //app.sound.init();
     //app.main.sound = app.sound;
     //app.main.myKeys = app.myKeys;
+    app.main.AnimatedSprite = app.AnimatedSprite;
+    app.main.imagePaths = app.imagePaths;
+    
 	app.main.init();
 };
 /*
