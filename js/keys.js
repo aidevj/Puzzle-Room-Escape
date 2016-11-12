@@ -40,7 +40,7 @@ window.addEventListener("keydown",function(e){
         case 68:
         case 39:
             app.main.player.position.x+=30; break; // D (right)
-    } console.log("Position:" + app.main.player.position.x + "," + app.main.player.position.y);
+    } //console.log("Position:" + app.main.player.position.x + "," + app.main.player.position.y);
 });
 	
 window.addEventListener("keyup",function(e){

@@ -3,31 +3,29 @@
 var app = app || {};
 
 // initialize image sources
-app.imagePaths = Object.freeze({
-    playerImage: "img/samplesprite1.png",
-    //tileImage: "img/tile.png"
-    floorImage: "assets/floor.png",
-    wallImage: "assets/wall.png",
-    panelImage: "assets/panel.png",
-    doorImage: "assets/door.png"
- });
+app.imagePaths = [
+    "assets/floor.png",
+    "assets/wall.png",
+    "assets/panel.png",
+    "assets/door.png",
+    "img/playerStill.png"
+ ];
 
 window.onload = function(){
 	console.log("window.onload called");
     
     // hook up modules
     //app.sound.init();
-    //app.main.sound = app.sound;
+    app.main.sound = app.sound;
     //app.main.myKeys = app.myKeys;
     app.main.AnimatedSprite = app.AnimatedSprite;
     app.main.imagePaths = app.imagePaths;
     
 	app.main.init();
 };
-/*
 window.onblur = function() {
     console.log("blur at " + Date());
-    app.main.pauseGame = true;
+    app.main.paused = true;
     
     // stop the animation loop
     cancelAnimationFrame(app.main.animationID);
@@ -38,5 +36,12 @@ window.onblur = function() {
 
 window.onfocus = function() {
     console.log("focus at " + Date());
-    app.main.resumeGame();
-};*/
+     
+    // stop the animation loop, just in case it's running
+    cancelAnimationFrame(app.main.animationID);
+
+    app.main.paused = false;
+    
+    // restart the loop
+    app.main.update();
+};

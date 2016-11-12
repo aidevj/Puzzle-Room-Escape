@@ -1,6 +1,6 @@
 // main.js
 
-'use strict';
+"use strict";
 
 var app = app || {};
 
@@ -11,29 +11,28 @@ app.main = {
     HEIGHT: 480,
     canvas: undefined,
     ctx: undefined,
-   	lastTime: 0, 
+   	//lastTime: 0, 
     debug: true,
-    
-    gameState: undefined,
-    //sound: undefined, // requires - loaded by main.js
     
     paused: false,
     animationID: 0,
     debug: true,
     
+    gameState: undefined,
     GAME_STATE: {
         BEGIN: 0,
         PLAYING: 1,
         PAUSE: 2,
         ROUND_OVER: 3,
-        REPEAT_LEVEL: 4,
-        END: 5
+        END: 4
     },
     
-    player: {
-        position: { x: undefined, y: undefined },
-        color: 'red'
-    },
+    // SOUND
+    sound: undefined, // requires - loaded by main.js
+    
+    player: Object.seal({
+        position: { x: undefined, y: undefined }
+    }),
     
     // Map Properties
     currentMap: [],         // loaded in from txt file
@@ -86,7 +85,12 @@ app.main = {
               console.log("asset loaded");  
             };
             image.src = this.imagePaths[i];
+            if (i == 4) {       // player sprite
+                this.playerImage = image;
+                continue;
+            }
             this.MAP_IMAGES[i] = image;
+            
         }
         
         
@@ -127,55 +131,64 @@ app.main = {
 		this.ctx.fillStyle = "#6495ED";
         this.ctx.fillRect(0,0,this.WIDTH, this.HEIGHT);
         
+        if(this.paused){
+                this.drawPauseScreen(this.ctx);
+                return;
+            }
+        
         // TITLE SCREEN
         if (this.gameState == this.GAME_STATE.BEGIN)  {
             this.panelPressToggle = false;
-            this.drawStartScreen();
+            this.drawStartScreen(this.ctx);
         }
+        
+     
         
         // DURING GAME
         if (this.gameState == this.GAME_STATE.PLAYING){
-            if (!this.panelPressToggle) {   // Draw map
+            if (!this.panelPressToggle) {
                 this.drawMap(this.currentMap);
             }            
-            if (this.panelPressToggle) {    // check lights off
+            if (this.panelPressToggle) {
                 this.lightsOff();
             }
 
             // Draw Grid lines
             this.drawGrid(); // does not draw unless called after wall draw call
 
-            // INSTRUCTIONS:
-            this.ctx.save();
-            this.ctx.globalAlpha = .7;
-            this.ctx.font = "20px Arial";
-            this.ctx.textAlign='center';
-            this.ctx.fillStyle = "white";
-            this.ctx.fillText("You're the red square.", this.WIDTH/2, 80);
-            this.ctx.fillText("Move with WASD or Arrow Keys.", this.WIDTH/2, 110);
-            this.ctx.fillText("White blocks - switch panel.", this.WIDTH/2, 145);
-            this.ctx.fillText("Blue block -  exit.", this.WIDTH/2, 170);
-            this.ctx.fillText("You can only exit once you hit all the switches.", this.WIDTH/2, 265);
-            this.ctx.fillText("But once you hit a switch you'll have to traverse in the dark", this.WIDTH/2, 295);
-            this.ctx.fillText("until you find a different switch to turn it back on, or the exit", this.WIDTH/2, 325);
-            this.ctx.fillText("so try to remember the path.", this.WIDTH/2, 355);
+            // INSTRUCTIONS: only on lv0
+            if (this.currentLevel == 0) {
+                this.ctx.save();
+                this.ctx.globalAlpha = .7;
+                this.ctx.font = "20px Arial";
+                this.ctx.textAlign='center';
+                this.ctx.fillStyle = "white";
+                this.ctx.fillText("Escape the dungeon!", this.WIDTH/2, 80);
+                this.ctx.fillText("Move with WASD or Arrow Keys.", this.WIDTH/2, 110);
+                this.ctx.fillText("White blocks - switch panel.", this.WIDTH/2, 145);
+                this.ctx.fillText("E - exit.", this.WIDTH/2, 170);
+                this.ctx.fillText("You can only exit once you hit all the switches.", this.WIDTH/2, 265);
+                this.ctx.fillText("But once you hit a switch you'll have to traverse in the dark", this.WIDTH/2, 295);
+                this.ctx.fillText("until you find a different switch to turn it back on", this.WIDTH/2, 325);
+                this.ctx.fillText("so try to remember the path.", this.WIDTH/2, 355);
 
-            this.ctx.font = "12px Arial";
-            this.ctx.fillText("Wall collision... still yet to work", this.WIDTH/2, 405);
-            this.ctx.restore();
-
+                this.ctx.restore();
+            }
+            
             // Draw sprites
             this.drawSprites();
             //this.drawPlayerSprite();                                      // animatedsprite loading
             
+            // DRAW HUD
+            this.drawHUD(this.ctx);
         }      
         
         // ROUND OVER
         if (this.gameState == this.GAME_STATE.ROUND_OVER) {
-            this.drawRoundOverScreen();
+            this.drawRoundOverScreen(this.ctx);
         }
         
-		// Draw HUD	
+
 	},
     
     ///////////////////////////////////////////////////////
@@ -183,14 +196,14 @@ app.main = {
     ///////////////////////////////////////////////////////
     loadSprites: function() {   // mock-up blocks
         // call function constructors here    
-        this.player.position.x = this.WIDTH / 2;
-        this.player.position.y = this.HEIGHT / 2;
+        this.player.position.x = Math.floor(this.WIDTH / 2);
+        this.player.position.y = Math.floor(this.HEIGHT / 2);
     },
     
     drawSprites: function(){     // mock-up blocks   
         // drawing square as player for now
-        this.ctx.fillStyle = this.player.color;
-        this.ctx.fillRect(this.player.position.x,this.player.position.y,30,30);     
+        //this.ctx.fillStyle = this.player.color;
+        this.ctx.drawImage(this.playerImage, this.player.position.x,this.player.position.y,this.CELL_WIDTH, this.CELL_WIDTH);     
     },
     
     createPlayerSprite: function(x, y) { // loading sprites from spritesheets
@@ -213,7 +226,10 @@ app.main = {
     ///////////////////////////////////////////////////////
     /// MAP LOADING & DRAWING(transfer to utlities?)    ///
     ///////////////////////////////////////////////////////
-    loadMap: function(path){        // call once every new level load
+    
+    // Reads external txt files as maps
+    // call once every new level load
+    loadMap: function(path){        
         var xhr = new XMLHttpRequest();
         
         xhr.onload = function(){
@@ -238,6 +254,7 @@ app.main = {
         xhr.send();
     },
     
+    // Load in Panel information
     loadPanelData: function(map) {  // call once every new level load
         // if arrays not empty, empty them
         if (this.currentPanels.length > 0) {
@@ -263,9 +280,10 @@ app.main = {
         console.log("currentPanelsStates array:" + this.currentPanelsStates);  
     },
     
+    // Draws map assets in correspondence to loaded in map file
     drawMap: function(map) {
         //debugger;
-        for (var i=0; i<this.ROWS; i++) { // hardcoded number of rows canvas HEIGHT / CELL_WIDTH
+        for (var i=0; i<this.ROWS; i++) {
             var inner = map[i];
             for (var j=0; j<this.COLUMNS; j++) {
                 var value = inner[j];
@@ -275,6 +293,7 @@ app.main = {
         } // end i for
     },
     
+    // Draws grid lines
     drawGrid: function() {
       this.ctx.strokeStyle = "#888";
         this.ctx.lineWidth="1";
@@ -297,8 +316,7 @@ app.main = {
     ///              END MAP LOADING                    ///
     ///////////////////////////////////////////////////////
     
-       
-    
+    // Handle all collisions with player
     checkCollisions: function() {
         for (var i=0; i<this.currentMap.length;i++) {
             for (var j=0; j<this.currentMap[i].length; j++){
@@ -389,6 +407,7 @@ app.main = {
         } // end for
     },
     
+    // Loop through currentPanelStates to check if pressed
     areAllPanelsPressed: function(){    // ONLY check upon entering a door
         for (var i=0;i<this.currentPanelsStates.length;i++) {
             if (this.currentPanelsStates[i] == false) { return false; }    // as soon as a not touched panel is found, exit and return false
@@ -396,6 +415,7 @@ app.main = {
         return true;    
     },
     
+    // Makes the map black and unviewable besdies the player
     lightsOff: function() {
         this.ctx.fillStyle = '#000';
         this.ctx.fillRect(0,0,this.WIDTH,this.HEIGHT);
@@ -405,34 +425,94 @@ app.main = {
     ///                 SCREEN DRAWING                  ///
     ///////////////////////////////////////////////////////
     
-    drawStartScreen: function() {
-        this.ctx.save();
-        this.ctx.font = "30px Arial";
-        this.ctx.textAlign='center';
-        this.ctx.fillStyle = "white";
-        this.ctx.fillText("PUZZLE PANEL ESCAPE!!!", this.WIDTH/2, this.HEIGHT/2);
-        this.ctx.fillText("Click to start.", this.WIDTH/2, this.HEIGHT/2 + 50);
-        this.ctx.restore();
+    drawStartScreen: function(ctx) {
+        ctx.save();
+        ctx.font = "40px Creepster";
+        ctx.textAlign='center';
+        ctx.fillStyle = "white";
+        ctx.fillText("PANEL PUSHER", this.WIDTH/2, this.HEIGHT/2);
+        ctx.font = "20px Arial";
+        ctx.fillText("Click to start.", this.WIDTH/2, this.HEIGHT/2 + 50);
+        ctx.fillText("Made by Isis Melendez.", this.WIDTH/2, this.HEIGHT/2 + 80);
+        ctx.restore();
     },
     
     drawRoundOverScreen: function() {
-        this.ctx.globalAlpha = .5;
-        this.ctx.fillStyle = "#6495ED";
-        this.ctx.fillRect(0,0,this.WIDTH,this.HEIGHT);
+        ctx.save();
+        ctx.globalAlpha = .5;
+        ctx.fillStyle = "#6495ED";
+        ctx.fillRect(0,0,this.WIDTH,this.HEIGHT);
         
-        this.ctx.globalAlpha = 1;
-        this.ctx.font = "20px Arial";
-        this.ctx.textAlign='center';
-        this.ctx.fillStyle = "white";
-        this.ctx.fillText("You've escaped!", this.WIDTH/2, 80);
-        this.ctx.fillText("Click to continue to level: " + (this.currentLevel+2), this.WIDTH/2, 110);
+        ctx.globalAlpha = 1;
+        ctx.font = "20px Arial";
+        ctx.textAlign='center';
+        ctx.fillStyle = "white";
+        ctx.fillText("You've escaped!", this.WIDTH/2, 80);
+        ctx.fillText("Click to continue to level: " + (this.currentLevel+1), this.WIDTH/2, 110);
+        ctx.restore();
     },
+    
+    drawEndGameScreen: function(ctx) {
+        ctx.save();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "#6495ED";
+        ctx.fillRect(0,0,this.WIDTH,this.HEIGHT);
+        
+        ctx.globalAlpha = 1;
+        ctx.font = "20px Arial";
+        ctx.textAlign='center';
+        ctx.fillStyle = "white";
+        ctx.fillText("You've escaped forever!", this.WIDTH/2, 80);
+        ctx.font = "16px";
+        ctx.fillText("Click to replay.", this.WIDTH/2, 110);
+        ctx.restore();
+    },
+    
+    drawHUD: function(ctx) {
+        ctx.save();
+        ctx.font = "20px Creepster";
+        ctx.textAlign='left';
+        ctx.fillStyle = "white";
+        ctx.fillText("Level: " + this.currentLevel, 10, 20);
+        ctx.restore();
+    },
+    
+     drawPauseScreen: function(ctx){
+        ctx.save();
+        ctx.fillStyle = "#777";
+        ctx.fillRect(0,0,this.WIDTH,this.HEIGHT);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#fff";
+        ctx.fillText("PAUSED", this.WIDTH/2, this.HEIGHT/2, "40pt courier");
+        ctx.restore();
+    },
+    
     
     ///////////////////////////////////////////////////////
     ///              END SCREENS DRAWING                ///
     ///////////////////////////////////////////////////////
+   
+    pauseGame: function() {
+        this.paused = true;
+        cancelAnimationFrame(this.animationID);
+        this.update();
+    },
     
+    resumeGame: function() {
+        cancelAnimationFrame(this.animationID);
+        this.paused = false;
+        this.update();  // restart loop
+    },
+    
+    // Handle mouse click events in game states
     doMousedown: function(e) {
+        if (this.paused){
+          this.paused = false;
+          this.update();
+          return;
+        }
+        
         if (this.gameState == this.GAME_STATE.BEGIN) {
             this.gameState = this.GAME_STATE.PLAYING;
             return;

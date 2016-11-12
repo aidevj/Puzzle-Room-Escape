@@ -1,4 +1,4 @@
-/*
+
 // sound.js
 "use strict";
 // if app exists use the existing copy
@@ -9,10 +9,10 @@ var app = app || {};
 app.sound = (function(){
 	console.log("sound.js module loaded");
 	var bgAudio = undefined;
-	var effectAudio = undefined;
+	/*var effectAudio = undefined;
 	var currentEffect = 0;
 	var currentDirection = 1;
-	var effectSounds = ["1.mp3","2.mp3","3.mp3","4.mp3","5.mp3","6.mp3","7.mp3","8.mp3"];
+	var effectSounds = ["1.mp3","2.mp3","3.mp3","4.mp3","5.mp3","6.mp3","7.mp3","8.mp3"];*/
 	
 
 	function init(){
@@ -47,4 +47,4 @@ app.sound = (function(){
         stopBGAudio: stopBGAudio,
         playEffect: playEffect
     };
-}());*/
+}());
