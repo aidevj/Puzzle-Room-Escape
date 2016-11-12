@@ -35,13 +35,31 @@ app.main = {
         color: 'red'
     },
     
-    currentLevel: 0,        // increment on level win
-    currentMap: [], 
+    walls: [], // temporarily hardcoded, to be read from file (not working) later 
+    /*
+    walls: [
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+    ],/**/
     CELL_WIDTH: 30, // grid cell size in px
-    MAP_COLORS: [
+    MAP_COLORS: [ // maybe not use this? not needed right now since colors are hardcoded: see drawWalls
         'rgba(0,0,0,0)',    // (0) empty space
         '#000',             // (1) wall (black)
-        '#fff',             // (2) panel (unpressed- once pressed, can only be let up by reaching a door or pressing another panel) // can't even see when dark
+        '#fff',             // (2) panel (unpressed- once pressed, can only be let up by reaching a door or pressing another panel)
         '#0041aa'           // (3) Door/exit
     ],
     
@@ -81,10 +99,10 @@ app.main = {
         this.canvas.onmousedown = this.doMousedown.bind(this);
         
         // load level
-        this.reset();
+        this.reset();                                                   // map loading in from external
         
 		// start the game loop
-		this.update();
+		//this.update();
 	},
     
     reset: function(){
@@ -102,7 +120,7 @@ app.main = {
         // CHECK FOR COLLISIONS
         this.checkCollisions();
 
-		//////DRAWING GOES UNDER HERE//////
+		// DRAWING GOES UNDER HERE
 		// Redraw background
 		this.ctx.fillStyle = "#6495ED";
         this.ctx.fillRect(0,0,this.WIDTH, this.HEIGHT);
@@ -115,10 +133,15 @@ app.main = {
         
         // DURING GAME
         if (this.gameState == this.GAME_STATE.PLAYING){
-            if (!this.panelPressToggle) {   // Draw map
-                this.drawMap(this.currentMap);
-            }            
-            if (this.panelPressToggle) {    // check lights off
+            // Draw map
+            this.drawMap(this.walls); // ERROR:? executing before loadMap is done?
+            // for now hardcode all the walls
+            if (!this.panelPressToggle) {
+                this.drawWalls();
+            }
+
+            // check lights off
+            if (this.panelPressToggle) {
                 this.lightsOff();
             }
 
@@ -186,6 +209,8 @@ app.main = {
     },
     
     
+    
+    
     ///////////////////////////////////////////////////////
     /// MAP LOADING & DRAWING(transfer to utlities?)    ///
     ///////////////////////////////////////////////////////
@@ -200,10 +225,11 @@ app.main = {
                 gridArray[i]= line.split(',');
             }
             
-            app.main.currentMap = gridArray;
-            console.log(app.main.currentMap);
+            app.main.walls = gridArray;
+            console.log(app.main.walls);
             
-            //app.main.update();
+            app.main.update();
+            //draw walls here?
         }
        
         xhr.open('GET',path,true);
@@ -224,6 +250,31 @@ app.main = {
                 this.ctx.fillRect(j * this.CELL_WIDTH, i * this.CELL_WIDTH, this.CELL_WIDTH, this.CELL_WIDTH);
             } // end j for
         } // end i for
+    },
+    
+    drawWalls: function(){ // misnomer: this also draws panels and doors for now
+        for (var i=0; i<this.walls.length; i++){
+            this.ctx.save();
+            switch(this.walls[i]){ // block type
+                case 0: // nothing
+                    break;
+                case 1: // Black Walls
+                    this.ctx.fillStyle =  '#000'; 
+                    break;
+                case 2: // white panels
+                    this.ctx.fillStyle =  '#fff'; 
+                    break;
+                case 3: // white unpressed panels
+                    this.ctx.fillStyle =  '#0041aa'; 
+                    break;
+            } // end switch
+            
+            // draw
+            // x Pos = (i%22)*this.CELL_WIDTH
+            // y Pos = (Math.floor(i/22)) * this.CELL_WIDTH
+            this.ctx.fillRect((i%22)*this.CELL_WIDTH, (Math.floor(i/22)) * this.CELL_WIDTH, this.CELL_WIDTH, this.CELL_WIDTH);
+            this.ctx.restore();
+        }
     },
     
     drawGrid: function() {
@@ -248,18 +299,20 @@ app.main = {
     ///              END MAP LOADING                    ///
     ///////////////////////////////////////////////////////
     
-       
+    
+    
+    
     
     checkCollisions: function() {
-        for (var i=0; i<this.currentMap.length;i++) {
-            for (var j=0; j<this.currentMap[i].length; j++){
+        for (var i=0; i<this.walls.length;i++) {
+            for (var j=0; j<this.walls[i].length; j++){
 
                 var wallXPos = (j)*this.CELL_WIDTH;
                 var wallYPos = (i) * this.CELL_WIDTH;
                 //console.log("i:" + i + ", j:" + j);
 
                 // WALL CHECK
-                if (this.currentMap[i][j] == 1) {
+                if (this.walls[i][j] == 1) {
                     // otherwise go on to check
                     // (1) if x or y  is within CELL_WIDTH (30px) of the wall at i, disable that direction in keys.js
                     // (2) check:
@@ -298,7 +351,7 @@ app.main = {
                 } // END WALL CHECK
 
                 // PANEL CHECK
-                if (this.currentMap[i][j] == 2 || this.currentMap[i][j] == 3){ /////////// needs 2d position
+                if (this.walls[i][j] == 2 || this.walls[i][j] == 3){ /////////// needs 2d position
                     // when player position equals this panel execute toggle panel stuff (turn off lights)
                     if (this.player.position.x == wallXPos && this.player.position.y == wallYPos) {
                         console.log("on a panel");
@@ -308,7 +361,7 @@ app.main = {
 
 
                             // if this is a door set game state to round over
-                            if (this.currentMap[i][j] == 3 && this.lastPressedPanel.x == 120 && this.lastPressedPanel.y == 210) {
+                            if (this.walls[i][j] == 3 && this.lastPressedPanel.x == 120 && this.lastPressedPanel.y == 210) {
                                 // SET HERE RULES THAT ALL PANELS MUST BE PRESSED FIRST (hardcoded in if statement for now)
 
 
@@ -321,7 +374,7 @@ app.main = {
                                 this.player.position.y = Math.floor(this.HEIGHT/2);
                             }
 
-                            if (this.currentMap[i][j] != 3) {
+                            if (this.walls[i][j] != 3) {
                                 // only toggle on enter
                                 this.panelPressToggle = !this.panelPressToggle;
                                 // otherwise set this as last pressed panel
@@ -331,9 +384,9 @@ app.main = {
                             }
 
                         }
-                    } // end inner if
-                } // end if   
-            } // end inner for
+                    }
+                }// end if   
+            } // end 2nd for?
         } // end for 
     },
     
