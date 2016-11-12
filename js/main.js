@@ -62,7 +62,7 @@ app.main = {
     currentPanels: [],          // array of panel locations for current level, initiated in loadMap() function
     currentPanelsStates: [],    // array of booleans in correspondance so 
     panelPressToggle: false, // false - off, true - on
-    lastPressedPanel: { x: undefined, y: undefined },
+    lastPressedPanel: [],       // psuedo vector
     previousNonCollidingPos: { x: undefined, y: undefined },
     
 
@@ -303,8 +303,8 @@ app.main = {
         for (var i=0; i<this.currentMap.length;i++) {
             for (var j=0; j<this.currentMap[i].length; j++){
 
-                var wallXPos = (j)*this.CELL_WIDTH;
-                var wallYPos = (i)*this.CELL_WIDTH;
+                var blockXPos = (j)*this.CELL_WIDTH;
+                var blockYPos = (i)*this.CELL_WIDTH;
 
                 // WALL CHECK
                 if (this.currentMap[i][j] == 1) {
@@ -314,75 +314,86 @@ app.main = {
                     //      LEFT-RIGHT: Y's must be the same
                     //      UP-DOWN: X's must be the same
 
-                    if (this.player.position.x + this.CELL_WIDTH == wallXPos && this.player.position.y == wallYPos) { // checks RIGHT
+                    if (this.player.position.x + this.CELL_WIDTH == blockXPos && this.player.position.y == blockYPos) { // checks RIGHT
                         console.log("Cannot go RIGHT!");
                         // save this current position in case tries to go on wall
                         //this.previousNonCollidingPos.x = this.player.position.x;
                         //this.previousNonCollidingPos.y = this.player.position.y;
                     }
-                    else if (this.player.position.x - this.CELL_WIDTH == wallXPos && this.player.position.y == wallYPos) { // checks LEFT
+                    else if (this.player.position.x - this.CELL_WIDTH == blockXPos && this.player.position.y == blockYPos) { // checks LEFT
                         // disable right 'A' 
                         console.log("Cannot go LEFT!");
                     }
-                    else if (this.player.position.y + this.CELL_WIDTH == wallYPos && this.player.position.x == wallXPos) { // checks DOWN
+                    else if (this.player.position.y + this.CELL_WIDTH == blockYPos && this.player.position.x == blockXPos) { // checks DOWN
                         // disable down 'S'   
                         console.log("Cannot go DOWN!");
                     }
-                    else if (this.player.position.y - this.CELL_WIDTH == wallYPos && this.player.position.x == wallXPos) { // checks UP
+                    else if (this.player.position.y - this.CELL_WIDTH == blockYPos && this.player.position.x == blockXPos) { // checks UP
                         // disable down 'W'   
                         console.log("Cannot go UP!");
                     }
 
                     // if player tries to move onto wall, go to previous position
-                    //if (this.player.position.x == wallXPos || this.player.position.x == wallYPos) {
+                    //if (this.player.position.x == blockXPos || this.player.position.x == blockYPos) {
                     //    this.player.position.x = this.previousNonCollidingPos.x;
                     //    this.player.position.x = this.previousNonCollidingPos.x;
                     //}
-
-
-
-                    // how can I optimize this? maybe check if y/x's align first, then within that check for CELL_WIDTH space?
-                    // Test: GPU load +1-2% NVIDIA GeForce GTX960
                 } // END WALL CHECK
 
-                // PANEL CHECK
-                if (this.currentMap[i][j] == 2 || this.currentMap[i][j] == 3){ /////////// needs 2d position
-                    // when player position equals this panel execute toggle panel stuff (turn off lights)
-                    if (this.player.position.x == wallXPos && this.player.position.y == wallYPos) {
-                        console.log("on a panel");
-
-                        // if panel is not the same as the last or undefined, toggle
-                        if ((this.lastPressedPanel.x == undefined && this.lastPressedPanel.y == undefined) || (this.player.position.x != this.lastPressedPanel.x || this.player.position.y != this.lastPressedPanel.y)) {
-
-
-                            // if this is a door set game state to round over
-                            if (this.currentMap[i][j] == 3 && this.lastPressedPanel.x == 120 && this.lastPressedPanel.y == 210) {
-                                // SET HERE RULES THAT ALL PANELS MUST BE PRESSED FIRST (hardcoded in if statement for now)
-
-
-                                this.gameState = this.GAME_STATE.ROUND_OVER;
-                                // reset last panels and player pos 
-                                // THIS WILL BE CHANGED LATER, different start locations for different levels
-                                this.lastPressedPanel.x = undefined;
-                                this.lastPressedPanel.y = undefined;
-                                this.player.position.x = Math.floor(this.WIDTH/2);
-                                this.player.position.y = Math.floor(this.HEIGHT/2);
-                            }
-
-                            if (this.currentMap[i][j] != 3) {
-                                // only toggle on enter
-                                this.panelPressToggle = !this.panelPressToggle;
-                                // otherwise set this as last pressed panel
-                                this.lastPressedPanel.x = wallXPos;
-                                this.lastPressedPanel.y = wallYPos;
-                                console.log("Last pressed: " + this.lastPressedPanel.x + "," + this.lastPressedPanel.y);
-                            }
-
+                // DOOR CHECK
+                if (this.currentMap[i][j] == 3){ 
+                    // when player position equals this panel
+                    if (this.player.position.x == blockXPos && this.player.position.y == blockYPos) {
+                        // If DOOR & all panels are pressed (all true in the array)
+                        if (this.areAllPanelsPressed()) {
+                            this.gameState = this.GAME_STATE.ROUND_OVER;
+                            // reset last panels and player pos 
+                            // THIS WILL BE CHANGED LATER, different start locations for different levels
+                            this.lastPressedPanel.x = undefined;
+                            this.lastPressedPanel.y = undefined;
+                            this.player.position.x = Math.floor(this.WIDTH/2);
+                            this.player.position.y = Math.floor(this.HEIGHT/2);
                         }
                     } // end inner if
                 } // end if   
             } // end inner for
         } // end for 
+        
+        // PANEL CHECK (separate from doors and walls)
+        // search through panel array locations
+        for (var k=0; k<this.currentPanels.length;k++){
+            // player location "vector"
+            var playerLoc = [this.player.position.x, this.player.position.y];
+            //console.log("PlayerLoc=" + playerLoc[0] + "," + playerLoc[1]);
+            //console.log("this.currentPanels[0,1]=" + this.currentPanels[0][0] + "," + this.currentPanels[0][1]);
+            
+            // If the player is ON a panel
+            if (playerLoc[0] == this.currentPanels[k][0] && playerLoc[1] == this.currentPanels[k][1]) {  
+                //console.log("on a panel");
+                
+                // first check the last panel
+                // if it is undefined or the current players location (current panel) is not the same panel previously pressed
+                if (this.lastPressedPanel == undefined || (playerLoc[0] != this.lastPressedPanel[0] && playerLoc[1] != this.lastPressedPanel[1])) {
+                    // only toggle on enter
+                    this.panelPressToggle = !this.panelPressToggle;
+                    // it is now safe to set this as last pressed panel
+                    this.lastPressedPanel = this.currentPanels[k];
+                    console.log("Last pressed: " + this.lastPressedPanel);
+                }
+                
+                // however as long the player steps on a panel it will be set to TRUE (pressed) for the rest of the level
+                this.currentPanelsStates[k] = true;
+                
+                // otherwise if it is the same panel, nothing will happen  
+            }
+        } // end for
+    },
+    
+    areAllPanelsPressed: function(){    // ONLY check upon entering a door
+        for (var i=0;i<this.currentPanelsStates.length;i++) {
+            if (this.currentPanelsStates[i] == false) { return false; }    // as soon as a not touched panel is found, exit and return false
+        }
+        return true;    
     },
     
     lightsOff: function() {
@@ -414,7 +425,7 @@ app.main = {
         this.ctx.textAlign='center';
         this.ctx.fillStyle = "white";
         this.ctx.fillText("You've escaped!", this.WIDTH/2, 80);
-        this.ctx.fillText("Click to continue to level: " + this.currentLevel+1, this.WIDTH/2, 110);
+        this.ctx.fillText("Click to continue to level: " + (this.currentLevel+2), this.WIDTH/2, 110);
     },
     
     ///////////////////////////////////////////////////////
@@ -430,6 +441,11 @@ app.main = {
         if (this.gameState == this.GAME_STATE.ROUND_OVER) {
             this.loadLevel();
             this.gameState = this.GAME_STATE.PLAYING;
+            return;
+        }
+        if (this.gameState == this.GAME_STATE.PLAYING){
+            // Debug - 
+            //console.log("this.areAllPanelsPressed()=" + this.areAllPanelsPressed());
             return;
         }
     }
