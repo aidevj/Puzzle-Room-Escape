@@ -6,6 +6,10 @@ var app = app || {};
 app.imagePaths = Object.freeze({
     playerImage: "img/samplesprite1.png",
     //tileImage: "img/tile.png"
+    floorImage: "assets/floor.png",
+    wallImage: "assets/wall.png",
+    panelImage: "assets/panel.png",
+    doorImage: "assets/door.png"
  });
 
 window.onload = function(){

@@ -37,17 +37,24 @@ app.main = {
     
     currentLevel: 0,        // increment on level win
     currentMap: [], 
-    CELL_WIDTH: 30, // grid cell size in px
-    MAP_COLORS: [
-        'rgba(0,0,0,0)',    // (0) empty space
+    CELL_WIDTH: 30,         // grid cell size in px
+    /*MAP_COLORS: [
+        'rgba(0,0,0,0)',    // (0) empty space (floor)
         '#000',             // (1) wall (black)
         '#fff',             // (2) panel (unpressed- once pressed, can only be let up by reaching a door or pressing another panel) // can't even see when dark
         '#0041aa'           // (3) Door/exit
-    ],
+    ],*/
     
+    ///////////////////////////////////////////////IMAGELOADING
     // image stuff
     imagePaths: undefined,
     playerImage: undefined,
+    MAP_IMAGES: [
+        { floorImage: undefined },  // 0
+        { panelImage: undefined },  // 1
+        { wallImage: undefined },   // 2
+        { doorImage: undefined }    // 3
+    ],
     
     panelPressToggle: false, // false - off, true - on
     lastPressedPanel: { x: undefined, y: undefined },
@@ -65,13 +72,41 @@ app.main = {
         this.gameState = this.GAME_STATE.BEGIN;
         
         
-        // load images // need onload
-        /*var image = new Image();                                      // animatedsprite loading
+        ///////////////////////////////////////////////IMAGELOADING
+        var image = new Image();
         image.onload = function() {
           console.log("img loaded");  
         };
-        image.src = this.imagePaths.playerImage;
-        this.playerImage = image;*/
+        //image.src = this.imagePaths.playerImage;
+        //this.playerImage = image;
+        var image = new Image();
+        image.onload = function() {
+          console.log("img loaded");  
+        };
+        image.src = this.imagePaths.floorImage;
+        this.MAP_IMAGES[0] = image;
+        
+        image = new Image();
+        image.onload = function() {
+          console.log("img loaded");  
+        };
+        image.src = this.imagePaths.wallImage;
+        this.MAP_IMAGES[1] = image;
+        
+        image = new Image(); 
+        image.onload = function() {
+          console.log("img loaded");  
+        };
+        image.src = this.imagePaths.panelImage;
+        this.MAP_IMAGES[2] = image;
+        
+        image = new Image();
+        image.onload = function() {
+          console.log("img loaded");  
+        };
+        image.src = this.imagePaths.doorImage;
+        this.MAP_IMAGES[3] = image;
+        
         
         // load sprites
         this.loadSprites();
@@ -218,10 +253,10 @@ app.main = {
         for (var i=0; i<16; i++) { // hardcoded number of rows canvas HEIGHT / CELL_WIDTH
             var inner = map[i];
             for (var j=0; j<22; j++) {
-                var value = inner[j]; // ERROR: map[i][j] = undefined (the j at that i)?? then bailing out
+                var value = inner[j];
                 
-                this.ctx.fillStyle = this.MAP_COLORS[value]; // set to the correct color
-                this.ctx.fillRect(j * this.CELL_WIDTH, i * this.CELL_WIDTH, this.CELL_WIDTH, this.CELL_WIDTH);
+                ///////////////////////////////////////////////IMAGELOADING
+                this.ctx.drawImage(this.MAP_IMAGES[value],j * this.CELL_WIDTH, i * this.CELL_WIDTH, this.CELL_WIDTH, this.CELL_WIDTH);
             } // end j for
         } // end i for
     },
